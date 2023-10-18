@@ -40,6 +40,11 @@ public class MemberController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
         }
 
+        if(requestBody.getPassword() != requestBody.getCheckPassword()) {
+            String errorMessage = "비밀번호가 다릅니다. 비밀번호를 확인해주세요!";
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
+        }
+
         Member createdMember = memberService.createMember(member);
 
         URI uri = URICreator.createUri("/post", createdMember.getMemberId());

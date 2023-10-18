@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import project.auth.utils.CustomAuthorityUtils;
 import project.exception.BusinessLogicException;
 import project.exception.ExceptionCode;
 import project.member.entity.Member;
@@ -17,32 +19,42 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MemberService {
 
-    private final MemberRepository memberRepository;
+    private final MemberRepository repository;
 
-//    private final PasswordEncoder passwordEncoder;
-    //    private final CustomAuthorityUtils authorityUtils;
+    private final PasswordEncoder passwordEncoder;
+    private final CustomAuthorityUtils authorityUtils;
     private final JavaMailSender javaMailSender;
 
     public Member createMember(Member member) {
 
-        return memberRepository.save(member);
+        String encryptedPassword = passwordEncoder.encode(member.getPassword());
+        member.setPassword(encryptedPassword);
+
+        List<String> roles = authorityUtils.createRoles(member.getEmail());
+        member.setRoles(roles);
+
+        return repository.save(member);
     }
 
     public Member updateMember(Member member) {
 
-        Member findMember = memberRepository.findByMemberId(member.getMemberId());
+        Member findMember = repository.findByMemberId(member.getMemberId());
 
         Optional.ofNullable(member.getUserName())
                 .ifPresent(findMember::setUserName);
         Optional.ofNullable(member.getPassword())
                 .ifPresent(findMember::setPassword);
+        Optional.ofNullable(member.getNickname())
+                .ifPresent(findMember::setNickname);
+        Optional.ofNullable(member.getPhoneNumber())
+                .ifPresent(findMember::setPhoneNumber);
 
-        //변경된 비밀번호 암호화 해서 저장
-//        if (member.getPassword() != null) {
-//            String encryptedPassword = passwordEncoder.encode(findMember.getPassword());
-//            findMember.setPassword(encryptedPassword);
-//        }
-            return memberRepository.save(findMember);
+//        변경된 비밀번호 암호화 해서 저장
+        if (member.getPassword() != null) {
+            String encryptedPassword = passwordEncoder.encode(findMember.getPassword());
+            findMember.setPassword(encryptedPassword);
+        }
+            return repository.save(findMember);
     }
 
     public Member findMember(long memberId) {
@@ -52,14 +64,14 @@ public class MemberService {
 //            throw new BusinessLogicException(ExceptionCode.UNAUTHORIZED_MEMBER);
 //        }
 
-        Member findMember = memberRepository.findByMemberId(memberId);
+        Member findMember = repository.findByMemberId(memberId);
 
         return findMember;
 
     }
 
     public List<Member> findMembers() {
-        return memberRepository.findAll();
+        return repository.findAll();
     }
 
     public void deleteMember(long memberId) {
@@ -68,11 +80,11 @@ public class MemberService {
 //            throw new BusinessLogicException(ExceptionCode.UNAUTHORIZED_MEMBER);
 //        }
 
-        memberRepository.deleteById(memberId);
+        repository.deleteById(memberId);
     }
 
     public Member verifiedMember(long memberId) {
-        Optional<Member> optional = memberRepository.findById(memberId);
+        Optional<Member> optional = repository.findById(memberId);
         Member findId = optional.orElseThrow(() -> new BusinessLogicException(ExceptionCode.MEMBER_NOT_FOUND));
 
         return findId;
@@ -121,7 +133,7 @@ public class MemberService {
 //        javaMailSender.send(mailMessage);
 //    }
 
-    private String ehsdjgenerateVerificationCode() {
+    private String generateVerificationCode() {
         // 랜덤 숫자 문자열 생성
         return RandomStringUtils.randomNumeric(6);
     }
