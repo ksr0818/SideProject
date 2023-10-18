@@ -10,9 +10,9 @@ import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
 
-@Getter
 @EntityListeners(AuditingEntityListener.class)
 @MappedSuperclass
+@Getter
 public abstract class Auditable {
     @CreatedDate
     @Column(name = "CREATED_AT", updatable = false)
@@ -22,3 +22,5 @@ public abstract class Auditable {
     @Column(name = "LAST_MODIFIED_AT")
     private LocalDateTime modifiedAt;
 }
+
+
